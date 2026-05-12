@@ -58,9 +58,9 @@ To view the live dashboard:
 ## 🧠 How the AI works (Under the Hood)
 
 1. **State Encoding**: The 2x2 cube has 24 individual colored tiles. We one-hot encode these colors into an array of 144 inputs.
-2. **Deep Q-Network (DQN)**: The network has 3 dense hidden layers (512 -> 512 -> 256 nodes) using ReLU activation. It takes the 144-element state array and outputs 12 Q-values (representing the expected future reward for taking each of the 12 possible face rotations).
-3. **Experience Replay**: The agent stores its past moves in a memory buffer. Every step, it pulls a random batch of 64 past experiences and trains the network on them, preventing catastrophic forgetting.
-4. **Target Network**: To stabilize learning, a secondary "Target" network is used to calculate the future rewards, which is slowly synced with the main network every 50 episodes.
+2. **Deep Q-Network (DQN)**: The network has 3 dense hidden layers (with 512 -> 512 -> 256 nodes) using ReLU activation. It takes the 144-element state array and outputs 12 Q-values (representing the expected future reward for taking each of the 12 possible face rotations).
+3. **Experience Replay**: The agent stores its past moves in a memory buffer. Every step, it pulls a random batch of 64 past experiences and trains the network on them.
+4. **Target Network**: To stabilize learning, a secondary "Target" network is used to calculate the future rewards, which is synced with the main network every 50 episodes.
 
 ## ⚙️ Configuration
 Want to tweak the AI? Open `src/main/java/RubiksCubeRL.java` and modify these constants at the top of the file:
@@ -72,3 +72,5 @@ Want to tweak the AI? Open `src/main/java/RubiksCubeRL.java` and modify these co
 Training on a CPU works great, but an NVIDIA GPU is much faster. If you have CUDA 11.6 installed, edit `pom.xml`:
 1. Comment out `<artifactId>nd4j-native-platform</artifactId>`
 2. Uncomment `<artifactId>nd4j-cuda-11.6-platform</artifactId>`
+
+## Good Luck and Happy Training :))
