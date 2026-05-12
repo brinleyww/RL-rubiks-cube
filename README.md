@@ -6,23 +6,26 @@
 ---
 
 ## 🌟 What is this?
-This project demonstrates how a machine learning agent can learn complex sequential puzzle-solving without any hardcoded algorithms or human heuristics. The agent starts knowing absolutely nothing about how a Rubik's Cube works. Through trial and error (Reinforcement Learning), it explores millions of cube states, gets "rewarded" when it matches tiles correctly, and slowly builds a neural network policy to solve the puzzle.
+This project is a reinforcement learning model based off the deeplearning4j library. It starts off with 0 knowledge of how the cube works. Through trial and error, it slowly learns, getting rewarded for improvement.
 
 ### Key Features
 - **Authentic Mechanics**: Features a mathematically complete 2x2 cube environment with all 12 rotational actions (`U, U', D, D', F, F', B, B', L, L', R, R'`).
-- **Adaptive Curriculum**: The AI learns like a human! It starts with 1-move scrambles. Once it proves it can solve those consistently (>75% solve rate), the curriculum automatically advances to 2-move scrambles, then 3, all the way to fully scrambled cubes.
-- **Reward Shaping**: The agent is rewarded for placing tiles on their correct faces, providing a gradient of "hot/cold" rather than just a binary "solved/not solved" signal.
-- **Deeplearning4j**: Powered by the enterprise-grade DL4J library, running completely locally on your CPU (or optionally, NVIDIA GPU).
+- **Reward Shaping**: The agent is rewarded for placing tiles on their correct faces.
+- **Deeplearning4j**: Able to be ran completely locally on your CPU (or optionally, NVIDIA GPU).
+
+### Improvements to be made
+- A punishment system to punish the algorithim for taking too many moves 
+- A way to prevent the bug where the algorithim loves to just hang out in an area where it thinks its getting good reward instead of finishing after some point, resulting in plateuing stats
 
 ---
 
 ## 📊 Live Training Dashboard
-Watching thousands of console logs is boring. We've built a **premium web dashboard** that connects to your local training session in real-time.
+Watching thousands of console logs is boring. I've built a **web dashboard** that connects to your local training session in real-time.
 
-As the Java agent trains, it streams telemetry data. You can open the dashboard in your browser to watch the AI learn:
-- **Rolling Solve Rate**: Watch the win-rate spike as the agent masters a scramble depth.
-- **Epsilon (Exploration Rate)**: See how the agent shifts from random flailing (exploration) to deliberate, learned actions (exploitation).
-- **Live 2D Cube Net**: A visual representation of exactly how the cube looks at the current step.
+As the Java agent trains, it streams telemetry data. You can open the dashboard in your browser to watch the AI learn (run localhost:8000):
+- **Rolling Solve Rate**
+- **Epsilon (Exploration Rate)**
+- **Live 2D Cube Net**
 
 ---
 
@@ -30,7 +33,7 @@ As the Java agent trains, it streams telemetry data. You can open the dashboard 
 
 ### Prerequisites
 - **Java 11 or higher** installed (`java -version`).
-- **Maven** (Don't have it? Don't worry! Windows users can just use our provided scripts which handle Maven for you).
+- **Maven** (Don't have it? Windows users can just use our provided scripts which handle Maven for you).
 
 ### 1. Start the Training Agent
 The neural network needs to run in the background to solve the cubes.
