@@ -60,10 +60,10 @@ To view the live dashboard:
 1. **State Encoding**: The 2x2 cube has 24 individual colored tiles. We one-hot encode these colors into an array of 144 inputs.
 2. **Deep Q-Network (DQN)**: The network has 3 dense hidden layers (with 512 -> 512 -> 256 nodes) using ReLU activation. It takes the 144-element state array and outputs 12 Q-values (representing the expected future reward for taking each of the 12 possible face rotations).
 3. **Experience Replay**: The agent stores its past moves in a memory buffer. Every step, it pulls a random batch of 64 past experiences and trains the network on them.
-4. **Target Network**: To stabilize learning, a secondary "Target" network is used to calculate the future rewards, which is synced with the main network every 50 episodes.
+4. **Target Network**: Used to calculate the future rewards, which is synced with the main network every 50 episodes.
 
 ## ⚙️ Configuration
-Want to tweak the AI? Open `src/main/java/RubiksCubeRL.java` and modify these constants at the top of the file:
+Want to tweak the RL module? Open `src/main/java/RubiksCubeRL.java` and modify these constants at the top of the file:
 - `MAX_STEPS`: How many moves the agent gets per episode.
 - `BATCH_SIZE`: How many experiences to learn from at once.
 - `GAMMA`: The discount factor (0.95 means it values future rewards highly).
