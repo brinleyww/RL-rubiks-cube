@@ -1,16 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.org/POM/4.0.0"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.org/POM/4.0.0 http://maven.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.rubiks.rl</groupId>
     <artifactId>rubiks-solver</artifactId>
     <version>1.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <name>Rubik's Cube RL Solver</name>
+    <description>Reinforcement Learning agent that learns to solve a Rubik's Cube using DQN</description>
 
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <dl4j.version>1.0.0-M2.1</dl4j.version>
     </properties>
 
@@ -22,19 +27,24 @@
             <version>${dl4j.version}</version>
         </dependency>
 
-        <!-- GPU Backend (CUDA 11.6 for RTX 3090) -->
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-cuda-11.6-platform</artifactId>
-            <version>${dl4j.version}</version>
-        </dependency>
-
-        <!-- CPU fallback (comment out if using GPU only) -->
+        <!-- CPU Backend (works everywhere) -->
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-native-platform</artifactId>
             <version>${dl4j.version}</version>
         </dependency>
+
+        <!--
+            GPU Backend (CUDA) - Uncomment the block below AND comment out
+            the nd4j-native-platform dependency above if you have an NVIDIA GPU
+            with CUDA 11.6 installed.
+
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-cuda-11.6-platform</artifactId>
+            <version>${dl4j.version}</version>
+        </dependency>
+        -->
 
         <!-- Logging -->
         <dependency>
@@ -46,6 +56,27 @@
 
     <build>
         <plugins>
+            <!-- Compiler plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <source>11</source>
+                    <target>11</target>
+                </configuration>
+            </plugin>
+
+            <!-- Execute with: mvn exec:java -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+                <configuration>
+                    <mainClass>RubiksCubeRL</mainClass>
+                </configuration>
+            </plugin>
+
             <!-- Package everything into a single runnable JAR -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -60,7 +91,19 @@
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>RubiksCubeRL</mainClass>
                                 </transformer>
+                                <!-- Merge META-INF/services files (needed by DL4J) -->
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                             </transformers>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
                         </configuration>
                     </execution>
                 </executions>

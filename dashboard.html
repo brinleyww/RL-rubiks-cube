@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rubik's Cube RL — Live Training Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --bg: #09090b;
+  --surface: rgba(24, 24, 27, 0.6);
+  --card: rgba(39, 39, 42, 0.4);
+  --border: rgba(255, 255, 255, 0.08);
+  --text: #f4f4f5;
+  --muted: #a1a1aa;
+  
+  --accent: #8b5cf6;
+  --accent-glow: rgba(139, 92, 246, 0.3);
+  --accent2: #06b6d4;
+  
+  --green: #10b981;
+  --red: #ef4444;
+  --orange: #f59e0b;
+  --blue: #3b82f6;
+  
+  /* Cube Colors */
+  --c-up: #f8fafc;
+  --c-down: #fbbf24;
+  --c-front: #22c55e;
+  --c-back: #3b82f6;
+  --c-left: #f97316;
+  --c-right: #ef4444;
+}
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  background-image: 
+    radial-gradient(circle at 15% 50%, rgba(139, 92, 246, 0.15), transparent 25%),
+    radial-gradient(circle at 85% 30%, rgba(6, 182, 212, 0.15), transparent 25%);
+  background-attachment: fixed;
+}
+
+/* Glassmorphism utilities */
+.glass {
+  background: var(--surface);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+}
+
+.glass-card {
+  background: var(--card);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.glass-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 40px 40px 20px;
+}
+
+.header-title h1 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -1px;
+  margin-bottom: 8px;
+  filter: drop-shadow(0 2px 10px var(--accent-glow));
+}
+
+.header-title .sub {
+  color: var(--muted);
+  font-size: 1rem;
+  font-weight: 400;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pulse {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 12px var(--green);
+  animation: pulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 12px var(--green); }
+  50% { opacity: .5; transform: scale(.8); box-shadow: 0 0 4px var(--green); }
+}
+
+/* Smoothing Slider */
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.controls label {
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+
+input[type=range] {
+  -webkit-appearance: none;
+  width: 150px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+  outline: none;
+}
+
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  background: var(--accent);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+/* Layout */
+.container {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 20px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Stats */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+}
+
+.stat-card {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 4px;
+  background: linear-gradient(90deg, var(--c), transparent);
+  opacity: 0.8;
+}
+
+.stat-card.green { --c: var(--green); }
+.stat-card.blue { --c: var(--blue); }
+.stat-card.orange { --c: var(--orange); }
+.stat-card.purple { --c: var(--accent); }
+
+.stat-card .label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.stat-card .val {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.1;
+  font-family: 'JetBrains Mono', monospace;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+}
+
+.stat-card .trend {
+  margin-top: 8px;
+  font-size: 0.8rem;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Main Dashboard Area */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 24px;
+  align-items: start;
+}
+
+/* Charts */
+.charts-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.chart-wrapper {
+  padding: 20px;
+  height: 320px;
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-wrapper h3 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--text);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chart-container {
+  flex: 1;
+  position: relative;
+  width: 100%;
+}
+
+/* Side Panel (Cube + Logs) */
+.side-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* 3D-ish Cube Net */
+.cube-wrapper {
+  padding: 30px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.cube-wrapper h3 {
+  align-self: flex-start;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 24px;
+  color: var(--text);
+  letter-spacing: 0.5px;
+}
+
+.cube-net {
+  display: grid;
+  grid-template-columns: repeat(4, 60px);
+  grid-template-rows: repeat(3, 60px);
+  gap: 8px;
+  margin-bottom: 24px;
+  perspective: 1000px;
+}
+
+.face {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 3px;
+  padding: 3px;
+  background: #111;
+  border-radius: 6px;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.8), 0 4px 10px rgba(0,0,0,0.3);
+  transform-style: preserve-3d;
+  transition: transform 0.5s ease;
+}
+
+.face:hover {
+  transform: translateZ(10px);
+}
+
+.face.up { grid-column: 2; grid-row: 1; }
+.face.left { grid-column: 1; grid-row: 2; }
+.face.front { grid-column: 2; grid-row: 2; }
+.face.right { grid-column: 3; grid-row: 2; }
+.face.back { grid-column: 4; grid-row: 2; }
+.face.down { grid-column: 2; grid-row: 3; }
+
+.tile {
+  width: 100%;
+  height: 100%;
+  border-radius: 3px;
+  transition: background-color 0.4s ease, box-shadow 0.4s ease;
+  box-shadow: inset 0 0 8px rgba(0,0,0,0.3), 0 0 2px rgba(255,255,255,0.2);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.c0 { background: var(--c-up); box-shadow: inset 0 0 10px rgba(0,0,0,0.1), 0 0 5px rgba(255,255,255,0.2); }
+.c1 { background: var(--c-down); box-shadow: inset 0 0 10px rgba(255,150,0,0.4); }
+.c2 { background: var(--c-front); box-shadow: inset 0 0 10px rgba(0,100,0,0.4); }
+.c3 { background: var(--c-back); box-shadow: inset 0 0 10px rgba(0,0,100,0.4); }
+.c4 { background: var(--c-left); box-shadow: inset 0 0 10px rgba(200,50,0,0.4); }
+.c5 { background: var(--c-right); box-shadow: inset 0 0 10px rgba(100,0,0,0.4); }
+
+.cube-info {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.cube-info strong {
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1rem;
+}
+
+/* Logs */
+.log-wrapper {
+  padding: 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 380px; /* Fixed height for scrolling */
+}
+
+.log-wrapper h3 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: var(--text);
+  letter-spacing: 0.5px;
+}
+
+.log-box {
+  flex: 1;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--muted);
+  overflow-y: auto;
+  line-height: 1.7;
+  padding-right: 8px;
+}
+
+.log-box::-webkit-scrollbar {
+  width: 6px;
+}
+.log-box::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.2);
+  border-radius: 4px;
+}
+.log-box::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+.log-box::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+.log-entry {
+  padding: 6px 8px;
+  border-radius: 6px;
+  margin-bottom: 4px;
+  border-left: 2px solid transparent;
+  transition: background 0.2s;
+  display: flex;
+  gap: 8px;
+}
+
+.log-entry:hover {
+  background: rgba(255,255,255,0.03);
+}
+
+.log-entry.solve {
+  background: rgba(16, 185, 129, 0.05);
+  border-left-color: var(--green);
+  color: #a7f3d0;
+}
+
+.log-entry.ep {
+  border-left-color: var(--border);
+}
+
+.log-icon { font-size: 0.9rem; }
+.log-ep { color: var(--blue); font-weight: 700; width: 55px; display: inline-block;}
+.log-metric { color: var(--text); }
+
+#status-footer {
+  text-align: center;
+  padding: 20px;
+  font-size: 0.85rem;
+  color: var(--muted);
+  letter-spacing: 0.5px;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .dashboard-grid { grid-template-columns: 1fr; }
+  .side-panel { flex-direction: row; }
+  .cube-wrapper { flex: 0 0 350px; }
+}
+
+@media (max-width: 900px) {
+  .charts-container { grid-template-columns: 1fr; }
+  .side-panel { flex-direction: column; }
+  .cube-wrapper { flex: auto; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">
+    <h1>Rubik's Cube AI</h1>
+    <div class="sub">
+      <span class="pulse" id="statusDot"></span>
+      <span id="statusText">Awaiting telemetry...</span>
+    </div>
+  </div>
+  <div class="controls">
+    <label for="smoothingRange">Graph Smoothing</label>
+    <input type="range" id="smoothingRange" min="0" max="0.99" step="0.01" value="0.8">
+    <span id="smoothingVal" style="font-size: 0.85rem; color: var(--accent); width: 40px; font-family: 'JetBrains Mono';">0.80</span>
+  </div>
+</div>
+
+<div class="container">
+  
+  <div class="stats-grid">
+    <div class="glass-card stat-card green">
+      <div class="label">Solve Rate (last 100)</div>
+      <div class="val" id="solveRate">0.0%</div>
+      <div class="trend" id="solveTrend">Monitoring performance</div>
+    </div>
+    <div class="glass-card stat-card blue">
+      <div class="label">Total Solves</div>
+      <div class="val" id="totalSolves">0</div>
+      <div class="trend">Successful episodes</div>
+    </div>
+    <div class="glass-card stat-card orange">
+      <div class="label">Best Win Streak</div>
+      <div class="val" id="bestStreak">0</div>
+      <div class="trend">Consecutive solves</div>
+    </div>
+    <div class="glass-card stat-card purple">
+      <div class="label">Current Episode</div>
+      <div class="val" id="episode">0</div>
+      <div class="trend">Training iterations</div>
+    </div>
+  </div>
+
+  <div class="dashboard-grid">
+    <div class="charts-container">
+      <div class="glass-card chart-wrapper">
+        <h3>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+          Rolling Solve Rate
+        </h3>
+        <div class="chart-container"><canvas id="solveChart"></canvas></div>
+      </div>
+      
+      <div class="glass-card chart-wrapper">
+        <h3>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"></line><line x1="18" y1="20" x2="18" y2="4"></line><line x1="6" y1="20" x2="6" y2="16"></line></svg>
+          Average Reward
+        </h3>
+        <div class="chart-container"><canvas id="rewardChart"></canvas></div>
+      </div>
+      
+      <div class="glass-card chart-wrapper">
+        <h3>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4l3 3"></path></svg>
+          Exploration Rate (Epsilon)
+        </h3>
+        <div class="chart-container"><canvas id="epsilonChart"></canvas></div>
+      </div>
+      
+      <div class="glass-card chart-wrapper">
+        <h3>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+          Tile Placement Accuracy
+        </h3>
+        <div class="chart-container"><canvas id="tileChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="side-panel">
+      <div class="glass-card cube-wrapper">
+        <h3>Live 2D Environment</h3>
+        <div class="cube-net" id="cubeNet"></div>
+        <div class="cube-info">
+          <div>Scramble Depth<br><strong id="scrambleVal">0</strong></div>
+          <div style="text-align:right">Epsilon<br><strong id="epsVal">1.0000</strong></div>
+        </div>
+      </div>
+
+      <div class="glass-card log-wrapper">
+        <h3>Console Output</h3>
+        <div class="log-box" id="logBox">
+          <div class="log-entry ep">Awaiting connection to local training process...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div id="status-footer">Synchronizing data stream every 2000ms</div>
+
+<script>
+// Default Chart.js settings
+Chart.defaults.color = '#8888a0';
+Chart.defaults.font.family = "'JetBrains Mono', monospace";
+
+const COLORS = ['c0','c1','c2','c3','c4','c5'];
+const FACE_ORDER = ['up','left','front','right','back','down'];
+
+// Refined Chart configuration
+const chartOpts = (label, color) => ({
+  type:'line',
+  data: {
+    labels:[], 
+    datasets:[{
+      label, 
+      data:[], 
+      borderColor: color,
+      backgroundColor: (context) => {
+        const ctx = context.chart.ctx;
+        const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+        gradient.addColorStop(0, color + '60'); // 60 hex = 37% opacity
+        gradient.addColorStop(1, color + '00'); // 00 hex = 0% opacity
+        return gradient;
+      },
+      borderWidth: 2.5,
+      pointRadius: 0,
+      pointHoverRadius: 4,
+      tension: 0.1, // Smooth curves off by default, we use EMA
+      fill: true
+    }]
+  },
+  options: {
+    responsive:true, 
+    maintainAspectRatio:false,
+    animation: { duration: 0 },
+    interaction: { mode: 'index', intersect: false },
+    scales: {
+      x: { display: false },
+      y: { 
+        border: { display: false },
+        ticks: { maxTicksLimit: 6, padding: 10 },
+        grid: { color: 'rgba(255, 255, 255, 0.05)', drawTicks: false }
+      }
+    },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: 'rgba(24, 24, 27, 0.9)',
+        titleFont: { family: "'Outfit', sans-serif", size: 13 },
+        bodyFont: { family: "'JetBrains Mono', monospace", size: 12 },
+        padding: 12,
+        cornerRadius: 8,
+        borderColor: 'rgba(255,255,255,0.1)',
+        borderWidth: 1,
+        displayColors: false
+      }
+    }
+  }
+});
+
+const solveChart = new Chart(document.getElementById('solveChart'), chartOpts('Solve Rate (%)','#10b981'));
+const rewardChart = new Chart(document.getElementById('rewardChart'), chartOpts('Reward','#3b82f6'));
+const epsilonChart = new Chart(document.getElementById('epsilonChart'), chartOpts('Epsilon','#f59e0b'));
+const tileChart = new Chart(document.getElementById('tileChart'), chartOpts('Tile Accuracy (%)','#8b5cf6'));
+
+let rawData = [];
+let previousSolveRate = 0;
+let smoothingWeight = 0.8;
+
+// EMA Smoothing Function
+function smooth(data, weight) {
+  if (data.length === 0) return [];
+  if (weight === 0) return data;
+  let result = [];
+  let lastValue = data[0];
+  for (let val of data) {
+    let smoothed = lastValue * weight + val * (1 - weight);
+    result.push(smoothed);
+    lastValue = smoothed;
+  }
+  return result;
+}
+
+const slider = document.getElementById('smoothingRange');
+const sliderVal = document.getElementById('smoothingVal');
+slider.oninput = function() {
+  smoothingWeight = parseFloat(this.value);
+  sliderVal.textContent = smoothingWeight.toFixed(2);
+  updateCharts();
+};
+
+function buildCubeNet(cubeData) {
+  const net = document.getElementById('cubeNet');
+  net.innerHTML = '';
+  if (!cubeData) return;
+  // Order: Up, Left, Front, Right, Back, Down
+  const faceIndices = [0, 4, 2, 5, 3, 1];
+  for (const fi of faceIndices) {
+    const face = document.createElement('div');
+    face.className = 'face ' + FACE_ORDER[faceIndices.indexOf(fi)];
+    for (let t = 0; t < 4; t++) {
+      const tile = document.createElement('div');
+      tile.className = 'tile ' + COLORS[cubeData[fi][t]];
+      face.appendChild(tile);
+    }
+    net.appendChild(face);
+  }
+}
+
+async function fetchCSV() {
+  try {
+    const resp = await fetch('training_metrics.csv?t=' + Date.now());
+    if (!resp.ok) return null;
+    return await resp.text();
+  } catch(e) { return null; }
+}
+
+async function fetchState() {
+  try {
+    const resp = await fetch('cube_state.json?t=' + Date.now());
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch(e) { return null; }
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(',');
+  const rows = lines.slice(1).map(line => {
+    const vals = line.split(',');
+    const obj = {};
+    headers.forEach((h, i) => obj[h.trim()] = vals[i]?.trim());
+    return obj;
+  });
+  // Ensure sorted by episode (fixes issues from previous interleaved writes)
+  rows.sort((a,b) => parseInt(a.episode) - parseInt(b.episode));
+  return rows;
+}
+
+function updateCharts() {
+  if (rawData.length === 0) return;
+  
+  // Smart downsampling so charts don't crash
+  const MAX_CHART_PTS = 200;
+  let data = rawData;
+  if (data.length > MAX_CHART_PTS) {
+    const step = Math.ceil(data.length / MAX_CHART_PTS);
+    data = data.filter((_, i) => i % step === 0);
+  }
+
+  const episodes = data.map(r => r.episode);
+  
+  solveChart.data.labels = episodes;
+  solveChart.data.datasets[0].data = smooth(data.map(r => parseFloat(r.solve_rate) * 100), smoothingWeight);
+  solveChart.update();
+
+  rewardChart.data.labels = episodes;
+  rewardChart.data.datasets[0].data = smooth(data.map(r => parseFloat(r.avg_reward)), smoothingWeight);
+  rewardChart.update();
+
+  epsilonChart.data.labels = episodes;
+  epsilonChart.data.datasets[0].data = smooth(data.map(r => parseFloat(r.epsilon)), smoothingWeight);
+  epsilonChart.update();
+
+  tileChart.data.labels = episodes;
+  tileChart.data.datasets[0].data = smooth(data.map(r => parseFloat(r.tile_accuracy) * 100), smoothingWeight);
+  tileChart.update();
+}
+
+function updateStats(state) {
+  if (!state) return;
+  
+  const currentRate = state.solveRate * 100;
+  
+  // Format numbers nicely
+  document.getElementById('solveRate').textContent = currentRate.toFixed(1) + '%';
+  document.getElementById('totalSolves').textContent = state.totalSolves.toLocaleString();
+  document.getElementById('bestStreak').textContent = state.bestStreak.toLocaleString();
+  document.getElementById('episode').textContent = state.episode.toLocaleString();
+  document.getElementById('scrambleVal').textContent = state.scramble;
+  document.getElementById('epsVal').textContent = state.epsilon.toFixed(4);
+  
+  // Trend indicator
+  const trendEl = document.getElementById('solveTrend');
+  if (currentRate > previousSolveRate) {
+    trendEl.innerHTML = '<span style="color:var(--green)">▲ Improving</span>';
+  } else if (currentRate < previousSolveRate) {
+    trendEl.innerHTML = '<span style="color:var(--orange)">▼ Dropping</span>';
+  } else {
+    trendEl.innerHTML = '<span style="color:var(--muted)">▬ Stable</span>';
+  }
+  
+  if(state.episode > 0) previousSolveRate = currentRate;
+}
+
+function updateLog(rows) {
+  const logBox = document.getElementById('logBox');
+  const recent = rows.slice(-40);
+  
+  const html = recent.map(r => {
+    const solved = r.solved === 'true';
+    const cls = solved ? 'solve' : 'ep';
+    const icon = solved ? '✓' : '✗';
+    return `<div class="log-entry ${cls}">
+              <span class="log-icon">${icon}</span>
+              <span>
+                Ep <span class="log-ep">${r.episode.padStart(5, ' ')}</span> │ 
+                Scr: <span class="log-metric">${r.scramble}</span> │ 
+                Stp: <span class="log-metric">${r.steps.padStart(2, ' ')}</span> │ 
+                Rwd: <span class="log-metric">${parseFloat(r.reward).toFixed(2).padStart(6, ' ')}</span> │ 
+                Sol: <span class="log-metric">${(parseFloat(r.solve_rate)*100).toFixed(1).padStart(4, ' ')}%</span>
+              </span>
+            </div>`;
+  }).join('');
+  
+  // Only update DOM if changed to prevent scroll jumping when user is scrolling
+  const isScrolledToBottom = logBox.scrollHeight - logBox.clientHeight <= logBox.scrollTop + 20;
+  logBox.innerHTML = html;
+  if (isScrolledToBottom) {
+    logBox.scrollTop = logBox.scrollHeight;
+  }
+}
+
+async function refresh() {
+  const [csv, state] = await Promise.all([fetchCSV(), fetchState()]);
+
+  if (csv) {
+    const rows = parseCSV(csv);
+    if (rows.length > 0 && rows.length !== rawData.length) {
+      rawData = rows;
+      updateCharts();
+      updateLog(rows);
+      document.getElementById('statusText').innerHTML = `Live Training Stream <span style="color:var(--muted);font-size:0.85em;margin-left:8px;">(Processing ${rows.length * 10} episodes)</span>`;
+      document.getElementById('statusDot').style.background = 'var(--green)';
+      document.getElementById('statusDot').style.boxShadow = '0 0 12px var(--green)';
+    }
+  } else {
+    document.getElementById('statusText').textContent = 'Training process disconnected. Please run the agent.';
+    document.getElementById('statusDot').style.background = 'var(--red)';
+    document.getElementById('statusDot').style.boxShadow = '0 0 12px var(--red)';
+  }
+
+  if (state) {
+    updateStats(state);
+    buildCubeNet(state.cube);
+  }
+}
+
+// Initial + interval
+refresh();
+setInterval(refresh, 2000);
+</script>
+</body>
+</html>
