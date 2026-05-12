@@ -1,9 +1,10 @@
-<project xmlns="http://maven.org/POM/4.0.0" 
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.org/POM/4.0.0 http://maven.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.boran.rl</groupId>
+    <groupId>com.rubiks.rl</groupId>
     <artifactId>rubiks-solver</artifactId>
     <version>1.0-SNAPSHOT</version>
 
@@ -14,25 +15,56 @@
     </properties>
 
     <dependencies>
-        <!-- The main Deep Learning library -->
+        <!-- Neural Network Core -->
         <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-core</artifactId>
             <version>${dl4j.version}</version>
         </dependency>
 
-        <!-- The CPU backend (Required for the math to work) -->
+        <!-- GPU Backend (CUDA 11.6 for RTX 3090) -->
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-cuda-11.6-platform</artifactId>
+            <version>${dl4j.version}</version>
+        </dependency>
+
+        <!-- CPU fallback (comment out if using GPU only) -->
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-native-platform</artifactId>
             <version>${dl4j.version}</version>
         </dependency>
 
-        <!-- Optional: For logging output -->
+        <!-- Logging -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
             <version>1.7.36</version>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Package everything into a single runnable JAR -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.4.1</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals><goal>shade</goal></goals>
+                        <configuration>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>RubiksCubeRL</mainClass>
+                                </transformer>
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>
