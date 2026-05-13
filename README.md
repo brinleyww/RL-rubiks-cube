@@ -20,38 +20,10 @@ This project is a reinforcement learning model based off the deeplearning4j libr
 ---
 
 ## 📊 Live Training Dashboard
-Watching thousands of console logs is boring. I've built a **web dashboard** that connects to your local training session in real-time.
-
-As the Java agent trains, it streams telemetry data. You can open the dashboard in your browser to watch the AI learn (run localhost:8000):
+As the Java agent trains, it streams its telemetry data. You can open the dashboard by running your local server address:
 - **Solve Rate**
 - **Epsilon (Exploration Rate)**
 - **Live Cube Net**
-
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-- **Java 11 or higher** installed (`java -version`).
-- **Maven** (Don't have it? Windows users can just use our provided scripts which handle Maven for you).
-
-### 1. Start the Training Agent
-The neural network needs to run in the background to solve the cubes.
-- **Windows Users**: Simply double-click **`run.bat`** in the project folder. It will auto-detect Java, compile the code, and start training.
-- **Mac/Linux/Terminal Users**: 
-  ```bash
-  mvn compile exec:java
-  ```
-
-### 2. Open the Dashboard
-Once the agent is running, it will generate a `training_metrics.csv` and `cube_state.json` file.
-To view the live dashboard:
-- **Windows Users**: Double-click **`serve_dashboard.bat`**. This starts a local web server and gives you a link to click.
-- **Terminal Users**: Start a python server in the directory:
-  ```bash
-  python -m http.server 8000
-  ```
-  Then navigate to `http://localhost:8000/dashboard.html` in your web browser.
 
 ---
 
