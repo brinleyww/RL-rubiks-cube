@@ -9,8 +9,8 @@
 This project is a reinforcement learning model based off the deeplearning4j library. It starts off with 0 knowledge of how the cube works. Through trial and error, it slowly learns, getting rewarded for improvement.
 
 ### Key Features
-- **Authentic Mechanics**: Features a mathematically complete 2x2 cube environment with all 12 rotational actions (`U, U', D, D', F, F', B, B', L, L', R, R'`).
-- **Reward Shaping**: The agent is rewarded for placing tiles on their correct faces.
+- **Mechanics**: Features a mathematically complete 2x2 cube environment with all 12 rotational actions (`U, U', D, D', F, F', B, B', L, L', R, R'`).
+- **Reward**: The agent is rewarded for placing tiles on their correct faces.
 - **Deeplearning4j**: Able to be ran completely locally on your CPU (or optionally, NVIDIA GPU).
 
 ### Improvements to be made
@@ -23,9 +23,9 @@ This project is a reinforcement learning model based off the deeplearning4j libr
 Watching thousands of console logs is boring. I've built a **web dashboard** that connects to your local training session in real-time.
 
 As the Java agent trains, it streams telemetry data. You can open the dashboard in your browser to watch the AI learn (run localhost:8000):
-- **Rolling Solve Rate**
+- **Solve Rate**
 - **Epsilon (Exploration Rate)**
-- **Live 2D Cube Net**
+- **Live Cube Net**
 
 ---
 
