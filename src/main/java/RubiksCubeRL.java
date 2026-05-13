@@ -15,8 +15,6 @@ import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 public class RubiksCubeRL {
-
-    // --- CONFIGURATION ---
     private static final int N = 2;
     private static final int NUM_FACES = 6;
     private static final int NUM_COLORS = 6;
@@ -29,8 +27,6 @@ public class RubiksCubeRL {
     private static final int TOTAL_EPISODES = 200000;
     private static final int LOG_INTERVAL = 10;
     private static final int TARGET_UPDATE_INTERVAL = 100;
-    
-    // MULTI-AGENT SETTINGS
     private static final int NUM_PARALLEL_ENVS = 16; 
 
     public static void main(String[] args) throws Exception {
@@ -52,14 +48,12 @@ public class RubiksCubeRL {
         ReplayBuffer buffer = new ReplayBuffer(MEMORY_CAPACITY);
         MetricsLogger logger = new MetricsLogger(metricsPath);
 
-        // Stats tracking
         LinkedList<Boolean> solveHistory = new LinkedList<>();
         LinkedList<Integer> stepsHistory = new LinkedList<>();
         LinkedList<Double> rewardHistory = new LinkedList<>();
         int bestStreak = 0, currentStreak = 0, totalSolves = 0, episodesFinished = 0;
         int scrambleDepth = 3;
 
-        // Init environments
         Environment[] envs = new Environment[NUM_PARALLEL_ENVS];
         for (int i = 0; i < NUM_PARALLEL_ENVS; i++) envs[i] = new Environment(scrambleDepth);
 
